@@ -26,15 +26,9 @@ import pandas as pd
 # Calculate PV array size function
 # =============================================================================
 
-def calc_pv_array_size(building_width, building_length,
-                       roof_angle, pv_width, pv_height,
-                       pv_power):
+def calc_pv_array_size(b_length, b_width, panel_w, panel_h, panel_power, roof_angle = 22): # <--- include parameters for building length, width, roof angle, panel width, panel height and panel power
     """
-    This is a docstring. Use it to explain to the user what a function does.
-    It will automatically be read by 'help' functions such as in spyder.
-    
-    Function to calculate the size of a PV array that can fit on a building
-    with shed style roof.
+    Calculate the total PV capacity that can be installed on a building's roof
 
     Parameters
     ----------
@@ -57,11 +51,18 @@ def calc_pv_array_size(building_width, building_length,
         Total power of PV array in kW.
     total_panels : float
         Maximum number of PV panels that fit on the roof.
+    
     """
+    # Convert to meters 
+    panel_h = panel_h*1e-3
+    panel_w = panel_w*1e-3
 
-    # <--- add your code to calculate PV array size from the previous exercise.
-
-    return total_power_kw, total_panels
+    # Assuming we place the panels in horizontal orientaion
+    true_building_width = b_width/math.cos(math.radians(roof_angle))
+    panels_along_length = b_length//(panel_h) # Number of panels along length
+    panels_along_width = true_building_width//(panel_w) 
+    total_panels = panels_along_length * panels_along_width
+    return panel_power*total_panels, total_panels
 
 # =============================================================================
 # Example PV class
@@ -102,7 +103,7 @@ class PV():
             Power output profile of the PV asset in kW.
         """
         self.pv_output_p = self.capacity_factor * self.peak_power_kw
-        return pv_output_p
+        return self.pv_output_p
 
 # =============================================================================
 # Basic conditional battery class
@@ -173,19 +174,33 @@ class Storage():
         # the self keyword.
         if demand_P > 0:  
             # <--- add your code to discharge the battery (remember the first period, t=0, is dealt with separately)
+            if t == 0:
+                self.storage_power[t] = -1* min(self.max_power, self.soc_0 - self.min_soc, demand_P)
+            else:
+                # Also check how much power is left to give
+                self.storage_power[t] = -1*min(self.max_power, (self.soc_E[t-1]- self.min_soc)*self.efficiency/self.dt, demand_P)
+        
         elif demand_P < 0:  
-            # <--- add your code to charge the battery (remember the first period, t=0, is dealt with separately)
+            if t == 0:
+                self.storage_power[t] = min(self.max_power, (self.max_power - self.soc_0), -1*demand_P)
+            else:
+                # Compare with how much space is available to ingest the power
+                self.storage_power[t] = min(self.max_power, (self.max_soc-self.soc_E[t-1])*self.efficiency/self.dt, -1*demand_P)
+
         else:
             self.storage_power[t] = 0
             
         # update the state of charge
-        self.soc_E[t] = 
+        if t == 0:
+            self.soc_E[0] = self.soc_0 + self.storage_power[t]*self.dt  # Maintain initial SoC
+        else:
+            self.soc_E[t] = self.soc_E[t-1] + self.storage_power[t]*self.dt
         
 
         # and calculate net_power
+        net_demand = demand_P + self.storage_power[t]
         
-        
-        return net_power
+        return net_demand
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ Learning objectives:
 
 Complete the script by filling in the missing code sections marked with <---.
 
-@author: PLACE YOUR NAME HERE
+@author: Wilhem Hector
 """
 
 # Import any necessary libraries
@@ -17,14 +17,21 @@ import numpy as np
 import os
 
 # <--- Define a function to size a PV system based on building dimensions and panel specifications
-def calculate_pv_size(): # <--- include parameters for building length, width, roof angle, panel width, panel height and panel power
+def calculate_pv_size(b_length, b_width, panel_w, panel_h, panel_power, roof_angle = 22): # <--- include parameters for building length, width, roof angle, panel width, panel height and panel power
     """
-    This is a docstring. Use it to describe the function's purpose, parameters, and return values.
+    Calculate the total PV capacity that can be installed on a building's roof
+    
     """
+    # Convert to meters 
+    panel_h = panel_h*1e-3
+    panel_w = panel_w*1e-3
 
-
-
-    return # <--- return the total PV capacity in kW and number of panels
+    # Assuming we place the panels in horizontal orientaion
+    true_building_width = b_width/math.cos(math.radians(roof_angle))
+    panels_along_length = b_length//(panel_h) # How many along the length
+    panels_along_width = true_building_width//(panel_w) 
+    total_panels = panels_along_length * panels_along_width
+    return panel_power*total_panels, total_panels
 
 if __name__ == "__main__":
     # =============================================================================
@@ -39,6 +46,6 @@ if __name__ == "__main__":
     # use the code.
     # =============================================================================
     
-    pv_capacity_kw, num_panels = # <--- call the calculate_pv_size function with appropriate arguments
+    pv_capacity_kw, num_panels = calculate_pv_size (30, 8, 1046, 1690, 400 )# <--- call the calculate_pv_size function with appropriate arguments
 
-    print() # <--- Add a print statement to display the number of PV panels and the total PV capacity in kW
+    print(f'The capacity of the house is {pv_capacity_kw} Wp, with {num_panels} panels') # <--- Add a print statement to display the number of PV panels and the total PV capacity in kW
